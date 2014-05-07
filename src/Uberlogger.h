@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -135,7 +136,7 @@ public:
   }
 };
 
-std::map<std::string, Uberlogger::Logger> Uberlogger::loggers;
+#define UBERINIT std::map<std::string, Uberlogger::Logger> Uberlogger::loggers
 
 static inline Message UBERLOG() {
   return Message();
