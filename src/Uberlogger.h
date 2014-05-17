@@ -14,16 +14,82 @@
 
 #define UBERDEFAULT "default"
 
+class Uberstyle {
+private:
+  std::string escape = "\033[";
+  std::string reset = escape + "0m";
+  std::string delimiter = ";";
+
+  int ccolor = 29;
+  int cbold = 1;
+  int citalic = 3;
+  int cunderlined = 4;
+  int cflashing = 6;
+
+  bool vcolor = false;
+  bool vbold = false;
+  bool vitalic = false;
+  bool vunderlined = false;
+  bool vflashing = false;
+
+public:
+  Uberstyle& color(int c) { ccolor = c; vcolor = true; return *this; }
+  Uberstyle& bold() { vbold = true; return *this; }
+  Uberstyle& italic() { vitalic = true; return *this; }
+  Uberstyle& underlined() { vunderlined = true; return *this; }
+  Uberstyle& flashing() { vflashing = true; return *this; }
+
+  std::string translate(std::string str) {
+    std::stringstream stream;
+    stream << escape;
+    if(vbold) stream << cbold << delimiter;
+    else stream << 0 << delimiter;
+    if(vitalic) stream << citalic << delimiter;
+    if(vunderlined) stream << cunderlined << delimiter;
+    if(vflashing) stream << cflashing << delimiter;
+    stream << ccolor << "m" << str << reset;
+
+    return stream.str();
+  }
+
+  Uberstyle& operator | (const Uberstyle& style) {
+    if(style.ccolor != 29) ccolor = style.ccolor;
+    if(style.vcolor != false) vcolor = true;
+    if(style.vbold != false) vbold = true;
+    if(style.vitalic != false) vitalic = true;
+    if(style.vunderlined != false) vunderlined = true;
+    if(style.vflashing != false) vflashing = true;
+    return *this;
+  }
+};
+
+// Style setters
+#define USTYLE(x, y) (Uberlogger::instance(#x).style(Uberstyle() | y))
+#define UBOLD (Uberstyle().bold())
+#define UITALIC (Uberstyle().italic())
+#define UUNDERLINED (Uberstyle().underlined())
+#define UFLASHING (Uberstyle().flashing())
+#define UCOLOR(x) (Uberstyle().color(x))
+
+// Colors
+#define BLACK (30)
+#define RED (31)
+#define GREEN (32)
+#define YELLOW (33)
+#define BLUE (34)
+#define MAGENTA (35)
+#define CYAN (36)
+#define WHITE (37)
+
 class Uberlogger {
 public:
-
-
   class Logger {
   private:
     std::string  _logname;
     std::string  _template;
     std::map<std::string, std::function<std::string(void)>> replace;
     std::mutex omutex;
+    Uberstyle _style;
 
   public:
     Logger(std::string logname = UBERDEFAULT) {
@@ -62,7 +128,7 @@ public:
         result.replace(begin, 5, _logname);
 
       omutex.lock();
-      std::cout << result << std::endl;
+      std::cout << _style.translate(result) << std::endl;
       omutex.unlock();
     }
 
@@ -75,6 +141,12 @@ public:
     void repl(const std::string& str, std::function<std::string(void)> func) {
       omutex.lock();
       replace.emplace(str, func);
+      omutex.unlock();
+    }
+
+    void style(const Uberstyle& __style) {
+      omutex.lock();
+      _style = __style;
       omutex.unlock();
     }
   };
